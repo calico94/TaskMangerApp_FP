@@ -7,42 +7,45 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
-import Home from './pages/Home';
-import PomodoroTimer from './pages/PomodoroTimer';
-import settings from './pages/Settings';
+import Home from './screens/Home';
+import PomodoroTimer from './screens/PomodoroTimer';
+import settings from './screens/Settings';
+import { TasksProvider, TasksContext } from './contexts/TasksContext.js';
 
 const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-    <StatusBar />
+    <TasksProvider>
+      <NavigationContainer>
+      <StatusBar />
 
-      <Tab.Navigator screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+        <Tab.Navigator screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName;
 
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Timer') {
-            iconName = focused ? 'timer' : 'timer-outline';
-          } else if (route.name === 'Settings') {
-            iconName = focused ? 'settings' : 'settings-outline';
-          }
+            if (route.name === 'Home') {
+              iconName = focused ? 'home' : 'home-outline';
+            } else if (route.name === 'Timer') {
+              iconName = focused ? 'timer' : 'timer-outline';
+            } else if (route.name === 'Settings') {
+              iconName = focused ? 'settings' : 'settings-outline';
+            }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-      })}
-      tabBarOptions={{
-        activeTintColor: 'tomato',
-        inactiveTintColor: 'gray',
-      }}
-      >
-        <Tab.Screen name="Home" component={Home} />
-        <Tab.Screen name="Timer" component={PomodoroTimer} />
-        <Tab.Screen name="Settings" component={settings} />
-      </Tab.Navigator>
-    </NavigationContainer>
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+        })}
+        tabBarOptions={{
+          activeTintColor: 'tomato',
+          inactiveTintColor: 'gray',
+        }}
+        >
+          <Tab.Screen name="Home" component={Home} />
+          <Tab.Screen name="Timer" component={PomodoroTimer} />
+          <Tab.Screen name="Settings" component={settings} />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </TasksProvider>
   );
 }
 
