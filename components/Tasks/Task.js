@@ -2,9 +2,11 @@ import React, { useContext, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CheckBox } from 'react-native-elements';
 import { useTheme } from '@react-navigation/native';
-
+import { TasksDispatchContext } from '../../contexts/TasksContext';
 export default function Task({ task }) {
   const { colors } = useTheme();
+  const dispatch = useContext(TasksDispatchContext);
+
   const formatDate = (date) => {
     return date ? new Date(date).toLocaleDateString() : null;
   };
@@ -43,6 +45,13 @@ export default function Task({ task }) {
           uncheckedColor='grey'
           checked={task.done}
           onPress={() => {
+            dispatch({
+              type: 'changed',
+              task: {
+                ...task,
+                done: !task.done
+              }
+            });
           }}
         />
         <View style={styles.textContainer}>

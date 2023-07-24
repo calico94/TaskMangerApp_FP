@@ -20,7 +20,10 @@ export default function App() {
       <NavigationContainer>
       <StatusBar />
 
-        <Tab.Navigator screenOptions={({ route }) => ({
+        <Tab.Navigator
+        initialRouteName='Home' screenOptions={({ route }) => ({
+          tabBarActiveTintColor:'#34eb83',
+          tabBarInactiveTintColor:'gray',
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
@@ -35,10 +38,6 @@ export default function App() {
             return <Ionicons name={iconName} size={size} color={color} />;
           },
         })}
-        tabBarOptions={{
-          activeTintColor: 'tomato',
-          inactiveTintColor: 'gray',
-        }}
         >
           <Tab.Screen name="Home" component={Home} />
           <Tab.Screen name="Timer" component={PomodoroTimer} />
