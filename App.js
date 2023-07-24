@@ -11,12 +11,15 @@ import Home from './screens/Home';
 import PomodoroTimer from './screens/PomodoroTimer';
 import settings from './screens/Settings';
 import { TasksProvider, TasksContext } from './contexts/TasksContext.js';
-
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetProvider } from './contexts/BottomSheetContext.js';
 const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}> 
     <TasksProvider>
+    <BottomSheetProvider>
       <NavigationContainer>
       <StatusBar />
 
@@ -44,7 +47,9 @@ export default function App() {
           <Tab.Screen name="Settings" component={settings} />
         </Tab.Navigator>
       </NavigationContainer>
+    </BottomSheetProvider>
     </TasksProvider>
+    </GestureHandlerRootView>
   );
 }
 

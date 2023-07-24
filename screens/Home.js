@@ -2,12 +2,13 @@ import React, { useContext, useState, useEffect} from 'react';
 import { View, StyleSheet, Keyboard, TouchableWithoutFeedback,
 TouchableOpacity, Text } from 'react-native';
 import TaskList from '../components/Tasks/TaskList';
-
+import TaskForm from '../components/Tasks/TaskForm';
 import { TasksContext } from '../contexts/TasksContext';
+import { useBottomSheet } from '../contexts/BottomSheetContext';
 
 const Home = () => {
   const { tasks } = useContext(TasksContext);
-  
+  const { expand } = useBottomSheet();
   return (
       <TouchableWithoutFeedback
         onPress={() => {
@@ -17,13 +18,19 @@ const Home = () => {
 
         {/* Task List Component */}
         <TaskList tasks={tasks}/>
-
+        <TaskForm />
         {/* Add Button */}
         <View style={styles.addButton.container}>
           <TouchableOpacity
             style={
               styles.addButton.button
             }
+            onPress={()=> {
+              try{  
+                expand();
+              }catch(error){
+                console.log('Error occurred on pressing:', error)
+            }}}
           >
             <Text style={styles.addButton.text}>+</Text>
           </TouchableOpacity>
@@ -49,6 +56,7 @@ const styles = StyleSheet.create({
       flex: 1,
       justifyContent: 'flex-end',
       alignItems: 'center',
+      zIndex: -1,
     },
     button:{
       marginBottom: 20,
