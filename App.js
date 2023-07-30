@@ -12,6 +12,7 @@ import PomodoroTimer from './screens/PomodoroTimer';
 import settings from './screens/Settings';
 import { TasksProvider, TasksContext } from './contexts/TasksContext.js';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Toast from 'react-native-toast-message';
 import { BottomSheetProvider } from './contexts/BottomSheetContext.js';
 const Tab = createBottomTabNavigator();
 
@@ -49,6 +50,7 @@ export default function App() {
       </NavigationContainer>
     </BottomSheetProvider>
     </TasksProvider>
+    <Toast/>
     </GestureHandlerRootView>
   );
 }

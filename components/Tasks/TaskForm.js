@@ -3,6 +3,7 @@ import { TouchableOpacity, Text, StyleSheet, View, Keyboard } from 'react-native
 import BottomSheet, { BottomSheetTextInput, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { TasksContext, TasksDispatchContext } from '../../contexts/TasksContext.js';
 import { useTheme } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 import { useBottomSheet } from '../../contexts/BottomSheetContext.js';
 export default function TaskForm(){
     const {
@@ -55,17 +56,32 @@ export default function TaskForm(){
       const nextId = computeNextId(tasks);
       // Only add the task if it's not empty
       if (taskName.trim() !== '') {
-          dispatch({
-          type: 'added',
-          id: nextId,
-          name: taskName,
-          description: taskDescription,
-          done: false,
-          });
-          resetForm();
-          close();
+        dispatch({
+        type: 'added',
+        id: nextId,
+        name: taskName,
+        description: taskDescription,
+        done: false,
+        });
+        resetForm();
+        close();
+        Toast.show({
+          type: 'success',
+          position: 'top',
+          text1: 'Task Added',
+          visibilityTime: 3000,
+          autoHide: true,
+          topOffset: 50,
+        });
       } else {
-          console.log('Task is empty');
+        Toast.show({
+          type: 'error',
+          position: 'top',
+          text1: 'Task is empty',
+          visibilityTime: 1200,
+          autoHide: true,
+          topOffset: 50,
+        });
     }};
 
     return (
