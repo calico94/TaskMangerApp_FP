@@ -11,6 +11,12 @@ export function TasksProvider({ children }) {
     sampleTasks
   );
 
+  const [showCompleted, setShowCompleted] = useState(true);
+
+  const toggleShowCompleted = () => {
+    setShowCompleted(prev => !prev);
+  };
+
   const [selectedTask, setSelectedTask] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -24,6 +30,7 @@ export function TasksProvider({ children }) {
       selectedTask, setSelectedTask,
       isSearching, setIsSearching,
       categoriesData, priorityData,
+      showCompleted, toggleShowCompleted
       }}>
       <TasksDispatchContext.Provider value={dispatch}>
         {children}

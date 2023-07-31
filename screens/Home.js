@@ -7,8 +7,16 @@ import { TasksContext } from '../contexts/TasksContext';
 import { useBottomSheet } from '../contexts/BottomSheetContext';
 
 const Home = () => {
-  const { tasks } = useContext(TasksContext);
+  const { tasks, showCompleted, 
+    toggleShowCompleted } = useContext(TasksContext);
+  const [displayedTasks, setDisplayedTasks] = useState(tasks);
   const { expand } = useBottomSheet();
+  // console.log(tasks);
+  useEffect(() => {
+    setDisplayedTasks(showCompleted ? tasks : 
+      tasks.filter(task => !task.done));
+  }, [tasks, showCompleted]);
+
   return (
       <TouchableWithoutFeedback
         onPress={() => {
@@ -17,7 +25,7 @@ const Home = () => {
       <View style={styles.container}>
 
         {/* Task List Component */}
-        <TaskList tasks={tasks}/>
+        <TaskList tasks={displayedTasks}/>
         <TaskForm />
         {/* Add Button */}
         <View style={styles.addButton.container}>
