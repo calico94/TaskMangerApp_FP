@@ -1,11 +1,20 @@
 import React, { useContext, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { TasksDispatchContext } from '../../contexts/TasksContext';
 import { CheckBox } from 'react-native-elements';
 import { useTheme } from '@react-navigation/native';
-import { TasksDispatchContext } from '../../contexts/TasksContext';
+import { useBottomSheet } from '../../contexts/BottomSheetContext';
 export default function Task({ task }) {
+  const { expandWithTask, setSelectedTask, 
+    setIsEditing } = useBottomSheet();
   const { colors } = useTheme();
   const dispatch = useContext(TasksDispatchContext);
+  
+  const handleOnPress = () => {
+    setSelectedTask(task);
+    setIsEditing(true);
+    expandWithTask();
+  }
 
   const formatDate = (date) => {
     return date ? new Date(date).toLocaleDateString() : null;
@@ -35,7 +44,7 @@ export default function Task({ task }) {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.taskContainer} 
-      >
+      onPress={handleOnPress}>
         <CheckBox
           containerStyle={{backgroundColor: 'transparent',
           borderWidth: 0, padding: 0}}

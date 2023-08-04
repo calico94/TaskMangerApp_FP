@@ -17,8 +17,6 @@ export function TasksProvider({ children }) {
     setShowCompleted(prev => !prev);
   };
 
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const categoriesData  = ["leisure", "sport", "study", "work"]
   const priorityData = ["high", "medium", "low"]
@@ -26,8 +24,7 @@ export function TasksProvider({ children }) {
 
   return (
     <TasksContext.Provider value={{
-      tasks, isEditing, setIsEditing,
-      selectedTask, setSelectedTask,
+      tasks,
       isSearching, setIsSearching,
       categoriesData, priorityData,
       showCompleted, toggleShowCompleted

@@ -7,6 +7,8 @@ export const useBottomSheet = () => {
 };
 
 export const BottomSheetProvider = ({ children }) => {
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
   const bottomSheetRef = useRef(null);
 
   const expandWithTask = useCallback(() => {
@@ -26,9 +28,13 @@ export const BottomSheetProvider = ({ children }) => {
       expand,
       close,
       expandWithTask,
+      selectedTask,
+      isEditing,
+      setSelectedTask,
+      setIsEditing,
     };
-  }, [expandWithTask]);
-
+  }, [expandWithTask, isEditing, selectedTask]);
+  
   return (
     <BottomSheetContext.Provider value={contextValue}>
       {children}

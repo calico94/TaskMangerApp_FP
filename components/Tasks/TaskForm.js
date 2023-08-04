@@ -1,15 +1,20 @@
-import React, { useState, useContext, useCallback, useMemo } from 'react';
+import React, { useState, useContext, useMemo, useCallback, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, View, Keyboard } from 'react-native';
 import BottomSheet, { BottomSheetTextInput, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { TasksContext, TasksDispatchContext } from '../../contexts/TasksContext.js';
 import { useTheme } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { useBottomSheet } from '../../contexts/BottomSheetContext.js';
-export default function TaskForm(){
+const TaskForm = () => {
     const {
       ref,
       close,
+      selectedTask,
+      isEditing,
+      setSelectedTask,
+      setIsEditing,
     } = useBottomSheet();
+
     const dispatch = useContext(TasksDispatchContext);
 
     const [taskName, setTaskName] = useState('');
@@ -24,13 +29,24 @@ export default function TaskForm(){
       return highestId + 1;
     }
 
+    useEffect(() => {
+      if (selectedTask) {
+        // populate the modal fields with selected task's details
+          setTaskName(selectedTask.name);
+          setTaskDescription(selectedTask.description);
+      } else {
+          setTaskName('');
+          setTaskDescription('');
+      }
+    }, [selectedTask]);
+
     const theme = useTheme();
     const { colors } = useTheme();
 
     const snapPoints = useMemo(() => ['50%','85%'], []);
     const handleSheetChanges = useCallback((index) => {
       console.log('handleSheetChanges', index);
-      if (index === -1          ) {
+      if (index === -1) {
         Keyboard.dismiss();
         resetForm();
       }
@@ -39,6 +55,8 @@ export default function TaskForm(){
     const resetForm = () => {
       setTaskName('');
       setTaskDescription('');
+      setIsEditing(false);
+      setSelectedTask(null);
       console.log('form resetted');
     };
     const renderBackdrop = useCallback(
@@ -84,6 +102,39 @@ export default function TaskForm(){
         });
     }};
 
+    const handleEditTask = () => {
+      // Only edit task if it's not empty
+      if (taskName.trim() !== '') {
+        dispatch({
+          type: 'changed',
+          task: {
+            ...selectedTask,
+            name: taskName,
+            description: taskDescription,
+          }
+        });
+        resetForm();
+        close();
+        Toast.show({
+          type: 'success',
+          position: 'top',
+          text1: 'Task Edited',
+          visibilityTime: 3000,
+          autoHide: true,
+          topOffset: 50,
+        });
+      } else {
+        // Handling form reset after BottomSheet is completely closed
+        console.log('Task is empty');
+      }
+    };
+
+    const handleCancelEdit = () => {
+      resetForm();
+      close();
+      setIsEditing(false);
+    };
+
     return (
       <BottomSheet
         ref={ref}
@@ -94,40 +145,54 @@ export default function TaskForm(){
         onChange={handleSheetChanges}
         style={styles.BottomSheet}
       >
-          <View style={styles.buttonRow}>
+        <View style={styles.buttonRow}>
+          {isEditing ? (
             <TouchableOpacity
-              onPress={handleAddTask}
-            >
+            onPress={handleCancelEdit}
+                  style={styles.cancelButton}
+                  >
+                  <Text style={{ color: 'red', textAlign: 'center' }}>
+                      Cancel
+                  </Text>
+              </TouchableOpacity>
+          ) : (
+              <View style={{ flex: 1 }}></View>
+          )}
+                
+          <TouchableOpacity
+              onPress={isEditing ? handleEditTask : handleAddTask}
+              style={styles.editButton}
+          >
               <Text style={{ color: 'rgb(10, 132, 255)', textAlign: 'center' }}>
-                {'Add Task'}
+                  {isEditing ? 'Save Edit' : 'Add Task'}
               </Text>
-            </TouchableOpacity>
-          </View>
-          {/* Task Name */}
-          <BottomSheetTextInput
-            placeholder="Enter Task Name"
-            placeholderTextColor='grey'
-            value={ taskName }
-            onChangeText={setTaskName}
-            style={[{backgroundColor: colors.background},
-              {color: colors.text},
-              styles.inputName]}
-            // autoFocus={true}
-            keyboardAppearance={theme.dark ? 'dark' : 'light'}
-          />
+          </TouchableOpacity>
+        </View>
+        {/* Task Name */}
+        <BottomSheetTextInput
+          placeholder="Enter Task Name"
+          placeholderTextColor='grey'
+          value={ taskName }
+          onChangeText={setTaskName}
+          style={[{backgroundColor: colors.background},
+            {color: colors.text},
+            styles.inputName]}
+          // autoFocus={true}
+          keyboardAppearance={theme.dark ? 'dark' : 'light'}
+        />
 
-          {/* Task Description */}
-          <BottomSheetTextInput
-            placeholder="Enter Task Description"
-            placeholderTextColor='grey'
-            multiline={true}
-            value={ taskDescription }
-            onChangeText={setTaskDescription}
-            style={[{backgroundColor: colors.background},
-              {color: colors.text},
-              styles.inputDescription]}
-            keyboardAppearance={theme.dark ? 'dark' : 'light'}
-          />
+        {/* Task Description */}
+        <BottomSheetTextInput
+          placeholder="Enter Task Description"
+          placeholderTextColor='grey'
+          multiline={true}
+          value={ taskDescription }
+          onChangeText={setTaskDescription}
+          style={[{backgroundColor: colors.background},
+            {color: colors.text},
+            styles.inputDescription]}
+          keyboardAppearance={theme.dark ? 'dark' : 'light'}
+        />
       </BottomSheet>
     );
     
@@ -169,3 +234,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
 });
+
+export default React.memo(TaskForm);
