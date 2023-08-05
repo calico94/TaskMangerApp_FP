@@ -5,6 +5,7 @@ import { TasksContext, TasksDispatchContext } from '../../contexts/TasksContext.
 import { useTheme } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import DropDownPicker from 'react-native-dropdown-picker';
+import CustomBackground from '../StyleComponents/BottomSheetCustomBackground.js';
 import { useBottomSheet } from '../../contexts/BottomSheetContext.js';
 const TaskForm = () => {
     const {
@@ -173,7 +174,8 @@ const TaskForm = () => {
         enablePanDownToClose={true}
         onChange={handleSheetChanges}
         style={styles.BottomSheet}
-      >
+        backgroundComponent={props => 
+          <CustomBackground {...props} />}>
         <View style={styles.buttonRow}>
           {isEditing ? (
             <TouchableOpacity
