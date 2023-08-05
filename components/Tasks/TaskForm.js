@@ -4,6 +4,7 @@ import BottomSheet, { BottomSheetTextInput, BottomSheetBackdrop } from '@gorhom/
 import { TasksContext, TasksDispatchContext } from '../../contexts/TasksContext.js';
 import { useTheme } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import DropDownPicker from 'react-native-dropdown-picker';
 import { useBottomSheet } from '../../contexts/BottomSheetContext.js';
 const TaskForm = () => {
     const {
@@ -14,14 +15,30 @@ const TaskForm = () => {
       setSelectedTask,
       setIsEditing,
     } = useBottomSheet();
-
+    const { categoriesData, priorityData } = useContext(TasksContext);
     const dispatch = useContext(TasksDispatchContext);
 
     const [taskName, setTaskName] = useState('');
     const [taskDescription, setTaskDescription] = useState('');
-    
+    const [taskCategory, setTaskCategory] = useState(null);
+    const [taskPriority, setTaskPriority] = useState(null);
+
     const { tasks } = useContext(TasksContext);
-    
+
+     // For open state of dropdown box
+    const [categoryOpen, setCategoryOpen] = useState(false);
+    const [priorityOpen, setPriorityOpen] = useState(false);
+    const categoryItems = categoriesData.map(category => ({ label: category, value: category }));
+    const priorityItems = priorityData.map(priority => ({ label: priority, value: priority }));
+
+    const onCategoryOpen = useCallback(() => {
+      setPriorityOpen(false);
+    }, []);
+  
+    const onPriorityOpen = useCallback(() => {
+      setCategoryOpen(false);
+    }, []);
+
     const computeNextId = (tasks) => {
       if (tasks.length === 0) return 0;
       highestId = tasks.reduce((maxId, task) => 
@@ -34,9 +51,13 @@ const TaskForm = () => {
         // populate the modal fields with selected task's details
           setTaskName(selectedTask.name);
           setTaskDescription(selectedTask.description);
+          setTaskPriority(selectedTask.priority);
+          setTaskCategory(selectedTask.category);
       } else {
           setTaskName('');
           setTaskDescription('');
+          setTaskPriority(null);
+          setTaskCategory(null);
       }
     }, [selectedTask]);
 
@@ -55,6 +76,10 @@ const TaskForm = () => {
     const resetForm = () => {
       setTaskName('');
       setTaskDescription('');
+      setTaskCategory(null);
+      setTaskPriority(null);
+      setCategoryOpen(false);
+      setPriorityOpen(false);
       setIsEditing(false);
       setSelectedTask(null);
       console.log('form resetted');
@@ -80,6 +105,8 @@ const TaskForm = () => {
         name: taskName,
         description: taskDescription,
         done: false,
+        priority: taskPriority,
+        category: taskCategory,
         });
         resetForm();
         close();
@@ -111,6 +138,8 @@ const TaskForm = () => {
             ...selectedTask,
             name: taskName,
             description: taskDescription,
+            priority: taskPriority,
+            category: taskCategory,
           }
         });
         resetForm();
@@ -193,6 +222,33 @@ const TaskForm = () => {
             styles.inputDescription]}
           keyboardAppearance={theme.dark ? 'dark' : 'light'}
         />
+
+        <View style={styles.dropdownRow}>
+          {/* Category Dropdown Picker */}
+          <DropDownPicker
+            open={categoryOpen}
+            onOpen={onCategoryOpen}
+            value={taskCategory}
+            items={categoryItems}
+            setOpen={setCategoryOpen}
+            setValue={setTaskCategory}
+            placeholder="Select a category"
+            containerStyle={styles.dropDownContainer}
+            theme={theme.dark ? 'DARK' : 'LIGHT'}
+          />
+          {/* Priority Dropdown picker */}
+          <DropDownPicker
+            open={priorityOpen}
+            onOpen={onPriorityOpen}
+            value={taskPriority}
+            items={priorityItems}
+            setOpen={setPriorityOpen}
+            setValue={setTaskPriority}
+            placeholder="Select a priority"
+            containerStyle={styles.dropDownContainer}
+            theme={theme.dark ? 'DARK' : 'LIGHT'}
+          />
+        </View>
       </BottomSheet>
     );
     
@@ -226,6 +282,27 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 12,
     borderRadius: 12,
+  },
+  dropdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 25,
+    marginBottom: 20,
+  },
+  dropDownContainer: {
+    height: 40,
+    width: '45%',
+  },
+  dropDown: {
+    backgroundColor: '#d61b1b',
+    borderColor: "#ddd"
+  },
+  dropDownItem: {
+    justifyContent: 'flex-start',
+  },
+  dropDownList: {
+    backgroundColor: '#fafafa',
+    borderColor: "#ddd"
   },
   buttonRow: {
     flexDirection: 'row',
