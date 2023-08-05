@@ -11,6 +11,8 @@ import Home from './screens/Home';
 import PomodoroTimer from './screens/PomodoroTimer';
 import Settings from './screens/Settings';
 import { TasksProvider, TasksContext } from './contexts/TasksContext.js';
+import { ThemeProvider, ThemeContext } from './contexts/ThemeContext.js';
+import { LightTheme, DarkTheme } from './styles/theme.js';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
 const Tab = createBottomTabNavigator();
@@ -22,6 +24,7 @@ import { BottomSheetProvider } from './contexts/BottomSheetContext.js';
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}> 
+    <ThemeProvider>
     <TasksProvider>
       <BottomSheetProvider>
         <MenuProvider>
@@ -30,6 +33,7 @@ export default function App() {
       </BottomSheetProvider>
 
     </TasksProvider>
+    </ThemeProvider>
     <Toast/>
     </GestureHandlerRootView>
   );
@@ -45,10 +49,12 @@ const styles = StyleSheet.create({
 });
 
 function Navigation() {
+  const { darkMode } = useContext(ThemeContext);
   const { colors } = useTheme();
   const { showCompleted, toggleShowCompleted } = useContext(TasksContext);
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={darkMode ? 
+      DarkTheme : LightTheme}>
       <StatusBar hidden={false} barStyle="dark-content" />
 
       <Tab.Navigator
