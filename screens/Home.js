@@ -2,8 +2,10 @@ import React, { useContext, useState, useEffect} from 'react';
 import { View, StyleSheet, Keyboard, TouchableWithoutFeedback,
 TouchableOpacity, Text } from 'react-native';
 import TaskList from '../components/Tasks/TaskList';
-import TaskForm from '../components/Tasks/TaskForm';
+
 import { TasksContext } from '../contexts/TasksContext';
+import TaskFilterSearch from '../components/Tasks/TaskFilterSearch';
+import TaskForm from '../components/Tasks/TaskForm';
 import { useBottomSheet } from '../contexts/BottomSheetContext';
 
 const Home = () => {
@@ -21,7 +23,9 @@ const Home = () => {
         Keyboard.dismiss();
         }}>
       <View style={styles.container}>
-
+        {/* Filter and Search Component */}
+        <TaskFilterSearch 
+        updateDisplayedTasks={setDisplayedTasks} />
         {/* Task List Component */}
         <TaskList tasks={displayedTasks}/>
         <TaskForm />
