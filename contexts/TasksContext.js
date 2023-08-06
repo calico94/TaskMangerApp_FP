@@ -2,6 +2,7 @@
 //Dispatching actions like it
 import { createContext, useEffect, useReducer, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 export const TasksContext = createContext();
 
 export const TasksDispatchContext = createContext();
@@ -52,12 +53,48 @@ export function TasksProvider({ children }) {
   const categoriesData  = ["leisure", "sport", "study", "work"]
   const priorityData = ["high", "medium", "low"]
 
+  const importSampleData = async (dispatch) => {
+    try {
+    // Save sample data to AsyncStorage
+    await AsyncStorage.setItem('tasks', JSON.stringify(sampleTasks));
+    dispatch({ type: 'restored', tasks: sampleTasks });
+    Toast.show({
+      type: 'success',
+      position: 'top',
+      text1: 'Sample tasks imported',
+      visibilityTime: 3000,
+      autoHide: true,
+      topOffset: 50,
+    });
+    } catch (error) {
+      console.error('Failed to import sample data:', error);
+    } 
+  }
+  const removeSampleData = async (dispatch) => {
+    try {
+      // Set an empty array to 'tasks' key in AsyncStorage to clear out the data
+      await AsyncStorage.setItem('tasks', JSON.stringify([]));
+      // Clear the tasks from the state
+      dispatch({ type: 'cleared' });
+      Toast.show({
+        type: 'success',
+        position: 'top',
+        text1: 'Sample tasks cleared',
+        visibilityTime: 3000,
+        autoHide: true,
+        topOffset: 50,
+      });
+    } catch (error) {
+      console.error('Failed to remove sample data:', error);
+    }
+  };
 
   return (
     <TasksContext.Provider value={{
       tasks,
       isSearching, setIsSearching,
       categoriesData, priorityData,
+      importSampleData, removeSampleData,
       showCompleted, toggleShowCompleted
       }}>
       <TasksDispatchContext.Provider value={dispatch}>
@@ -105,6 +142,9 @@ function tasksReducer(tasks, action) {
     }
     case 'deleted': { // Deleted a task
       return tasks.filter(t => t.id !== action.id);
+    }
+    case 'cleared': { // Cleared All data
+      return [];
     }
     default: {
       throw Error('Unknown action: ' + action.type);

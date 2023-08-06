@@ -2,9 +2,12 @@ import React, { useContext, useState } from 'react';
 import { View, Switch, Text, StyleSheet, Appearance, Button } from 'react-native';
 import { ThemeContext } from '../contexts/ThemeContext';
 import { useTheme } from '@react-navigation/native';
+import { TasksContext, TasksDispatchContext } from '../contexts/TasksContext';
 function SettingsPage() {
   const { darkMode, setDarkMode, useDeviceAppearance, 
     setUseDeviceAppearance } = useContext(ThemeContext);
+  const { importSampleData, removeSampleData } = useContext(TasksContext);
+  const dispatch = useContext(TasksDispatchContext);
   const { colors } = useTheme();
   return (
     <View style={styles.container}>
@@ -39,6 +42,10 @@ function SettingsPage() {
           }}
         />
       </View>
+      <Button onPress={() => importSampleData(dispatch)}
+      title='Import Sample Data for testing'/>
+      <Button onPress={() => removeSampleData(dispatch)}
+      title='Remove Sample Data for testing' />
     </View>
   );
 }
