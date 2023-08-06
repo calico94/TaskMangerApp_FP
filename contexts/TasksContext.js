@@ -1,6 +1,7 @@
 //Reference: learned reducer & context from: https://react.dev/learn/scaling-up-with-reducer-and-context
 //Dispatching actions like it
 import { createContext, useEffect, useReducer, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 export const TasksContext = createContext();
 
 export const TasksDispatchContext = createContext();
@@ -16,6 +17,36 @@ export function TasksProvider({ children }) {
   const toggleShowCompleted = () => {
     setShowCompleted(prev => !prev);
   };
+
+  // Load tasks from AsyncStorage when the component mounts (App starts) once
+  useEffect(() => {
+    const loadTasksFromStorage  = async () => {
+      try {
+      const storedTasks = await AsyncStorage.getItem('tasks');
+      if (storedTasks !== null) {
+        dispatch({ type: 'restored', 
+        tasks: JSON.parse(storedTasks) });
+        // console.log('tasks restored from async storage');
+      }
+      } catch (error) {
+        console.error("Failed to fetch tasks from async storage:",
+        error);
+      }
+    }
+    loadTasksFromStorage();
+  }, []);
+  // Save tasks to AsyncStorage whenever they change
+  useEffect(() => {
+    const saveTasksToStorage = async () => {
+      try {
+        await AsyncStorage.setItem('tasks', JSON.stringify(tasks));
+        // console.log('tasks saved to async storage')
+      } catch (error) {
+        console.error('Failed to save tasks to storage:', error);
+      }
+    };
+    saveTasksToStorage();
+  }, [tasks]);
 
   const [isSearching, setIsSearching] = useState(false);
   const categoriesData  = ["leisure", "sport", "study", "work"]
@@ -38,6 +69,16 @@ export function TasksProvider({ children }) {
 
 function tasksReducer(tasks, action) {
   switch (action.type) {
+    //*Note:restore doesn't restore calendars event though
+    case 'restored': { // Restored tasks from storage
+      return action.tasks.map(task => ({
+        ...task,
+        // Convert strings back to Date objects
+        dueDate: new Date(task.dueDate),
+        eventStartTime: new Date(task.eventStartTime),
+        eventEndTime: new Date(task.eventEndTime),
+      }));
+    }
     case 'added': { // Added a new task
       return [...tasks, {
         id: action.id,
