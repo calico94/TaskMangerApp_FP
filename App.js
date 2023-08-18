@@ -1,8 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
 
-// App.js
-import React, { useContext } from 'react';
+import React, { useEffect, useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,13 +14,84 @@ import { ThemeProvider, ThemeContext } from './contexts/ThemeContext.js';
 import { LightTheme, DarkTheme } from './styles/theme.js';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
+import * as Calendar from 'expo-calendar';
 const Tab = createBottomTabNavigator();
 import { Menu, MenuProvider, MenuOptions, MenuOption, 
 MenuTrigger } from 'react-native-popup-menu';
 import { useTheme }from '@react-navigation/native';
+import { Alert, Linking } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { BottomSheetProvider } from './contexts/BottomSheetContext.js';
 
 export default function App() {
+  // Get (or create if calender !exist yet) the app calendar
+  const getAppCalendar = async () => {
+    const calendarName = "Task Manager FP Calendar";
+    let calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+    let appCalendar = calendars.find(c => c.title === calendarName);
+
+    if (!appCalendar) {
+      let calendarId = await Calendar.createCalendarAsync({
+        title: calendarName,
+        color: '#2196F3',
+        entityType: Calendar.EntityTypes.EVENT,
+        source: { isLocalAccount: true, name: calendarName, type: 'default' },
+        name: calendarName,
+        ownerAccount: 'personal',
+        accessLevel: Calendar.CalendarAccessLevel.OWNER,
+      });
+      await AsyncStorage.setItem('appCalendarId', calendarId);
+      return calendarId;
+    } else {
+      await AsyncStorage.setItem('appCalendarId', appCalendar.id);
+      return appCalendar.id;
+    }
+  };
+
+  //Reference: (Usage snippet From expo documention) 
+  //https://docs.expo.dev/versions/latest/sdk/calendar/
+  //Reauest calendar permission once when app starts
+  useEffect(() => {
+    (async () => {
+      const { status, canAskAgain } = await Calendar.requestCalendarPermissionsAsync();
+      if (status === 'granted') {
+        // Fetch or create the app-specific calendar and store its ID
+        const calendarId = await getAppCalendar();
+        Platform.OS === 'ios' ? 
+        console.log(`IOS_calendarId: ${calendarId}`) : 
+        console.log(`Android_calendarId: ${calendarId}`);
+
+        // // log calendars
+        // const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+        // console.log('Here are all your calendars:');
+        // console.log({ calendars });
+
+      } else if (status === null) {
+        console.log(`status is null`);
+      } else if (status === 'denied' && canAskAgain) {
+        console.log(`status is denied`);
+        // If status is denied and canAskAgain is true, 
+        //prompt the user to grant permission by opening the
+        //permission settings page for adding calendar events
+        Alert.alert(
+        'Calendar Permission Denied',
+        `To access your calendar, we need your permission. \
+  Please enable it in settings for auto syncing calendar events \
+  with your tasks. \n Note: if you don't allow it, your added \
+  tasks will not be synced with your calendar even if you \
+  reanable it later.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ],
+        );
+      } else {
+        console.log(`Calendar Pemission status: ${status}`);
+        console.log(`canAskAgain?: ${canAskAgain}`);
+      }
+    })();
+  }, []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}> 
     <ThemeProvider>

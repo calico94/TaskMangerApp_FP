@@ -5,24 +5,55 @@ import Task from './Task.js';
 import { Swipeable } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
 import { Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Calendar from 'expo-calendar';
 
 const windoWidth = Dimensions.get('window').width;
 function TaskList({ tasks }) {
   const dispatch = useContext(TasksDispatchContext)
-  const handleDelete = useCallback((id) => {
-    dispatch({ type: 'deleted', id });
-
-    // Show toast message after successful delete
-    Toast.show({
-      type: 'success',
-      position: 'top',
-      text1: 'Task deleted',
-      visibilityTime: 3000,
-      autoHide: true,
-      topOffset: 50,
-      // bottomOffset: 40
-    });
-  }, [dispatch]);
+  const handleDelete = useCallback(async (taskId) => {
+    try {
+      const calendarId = await AsyncStorage
+      .getItem('appCalendarId');
+  
+      if (!calendarId) {
+        console.warn('No Calendar ID found');
+        return;
+      }
+      // Find the task in order to access its calendarEventId
+      const taskToDelete = tasks.find(task => task.id === taskId);
+      
+      if(taskToDelete && taskToDelete.calendarEventId) {
+        // If calendarEventId is found, 
+        //delete the corresponding calendar event
+        await Calendar.deleteEventAsync(taskToDelete.calendarEventId);
+      }
+      // delete task
+      dispatch({ type: 'deleted', id: taskId });
+  
+      // Show toast message after successful delete
+      Toast.show({
+        type: 'success',
+        position: 'top',
+        text1: 'Task deleted',
+        text2: 'Calendar event deleted',
+        visibilityTime: 3000,
+        autoHide: true,
+        topOffset: 50,
+      });
+    } catch (error) {
+      console.error('Failed to delete task and calendar event:', error);
+      Toast.show({
+        type: 'error',
+        position: 'top',
+        text1: 'Failed to delete task and calendar event',
+        text2: `Error: ${error}`,
+        visibilityTime: 3000,
+        autoHide: true,
+        topOffset: 50,
+      });
+    }
+  }, [dispatch, tasks]);
 
   // Swipe Left to delete, render delete button at the right end
   const renderRightAction = useCallback((id) => {

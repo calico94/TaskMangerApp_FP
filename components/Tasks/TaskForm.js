@@ -4,8 +4,11 @@ import BottomSheet, { BottomSheetTextInput, BottomSheetBackdrop } from '@gorhom/
 import { TasksContext, TasksDispatchContext } from '../../contexts/TasksContext.js';
 import { useTheme } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import DropDownPicker from 'react-native-dropdown-picker';
 import CustomBackground from '../StyleComponents/BottomSheetCustomBackground.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Calendar from 'expo-calendar';
 import { useBottomSheet } from '../../contexts/BottomSheetContext.js';
 const TaskForm = () => {
     const {
@@ -16,27 +19,56 @@ const TaskForm = () => {
       setSelectedTask,
       setIsEditing,
     } = useBottomSheet();
+
+    const initializeDate = () => {
+      const date = new Date();
+      date.setSeconds(0);
+      date.setMilliseconds(0);
+      return date;
+  };
     const { categoriesData, priorityData } = useContext(TasksContext);
     const dispatch = useContext(TasksDispatchContext);
-
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    
     const [taskName, setTaskName] = useState('');
     const [taskDescription, setTaskDescription] = useState('');
+    const [taskDueDate, setTaskDueDate] = useState(initializeDate);
+    const [eventStartTime, setEventStartTime] = useState(initializeDate);
+    const [eventEndTime, setEventEndTime] = useState(initializeDate);
+    //"Number of minutes from the startDate of the calendar 
+    //item that the alarm should occur." Reference: https://docs.expo.dev/versions/latest/sdk/calendar/#alarm
+    const [alarmRelativeOffset, setAlarmRelativeOffset] = useState(null);
     const [taskCategory, setTaskCategory] = useState(null);
     const [taskPriority, setTaskPriority] = useState(null);
 
     const { tasks } = useContext(TasksContext);
 
-     // For open state of dropdown box
+    // For open state of dropdown box
     const [categoryOpen, setCategoryOpen] = useState(false);
     const [priorityOpen, setPriorityOpen] = useState(false);
+    const [alarmOpen, setAlarmOpen] = useState(false);
     const categoryItems = categoriesData.map(category => ({ label: category, value: category }));
     const priorityItems = priorityData.map(priority => ({ label: priority, value: priority }));
+    const alarmOffsets = [0, -5, -10, -15, -30, -120];
+    const alarmItems = alarmOffsets.map(offset => {
+      let label;
+      if (offset === 0) label = 'At the time of event';
+      else if (Math.abs(offset) < 60) label = `${Math.abs(offset)} min. before`;
+      else label = `${Math.abs(offset) / 60} hours before`;
 
+      return { label, value: offset };
+    });
+    
     const onCategoryOpen = useCallback(() => {
       setPriorityOpen(false);
     }, []);
   
     const onPriorityOpen = useCallback(() => {
+      setCategoryOpen(false);
+    }, []);
+
+    const onAlarmOpen = useCallback(() => {
+      setPriorityOpen(false);
       setCategoryOpen(false);
     }, []);
 
@@ -52,13 +84,20 @@ const TaskForm = () => {
         // populate the modal fields with selected task's details
           setTaskName(selectedTask.name);
           setTaskDescription(selectedTask.description);
+          setTaskDueDate(selectedTask.dueDate || initializeDate);
+          setEventStartTime(selectedTask.eventStartTime ||initializeDate);
+          setEventEndTime(selectedTask.eventEndTime ||initializeDate);
           setTaskPriority(selectedTask.priority);
           setTaskCategory(selectedTask.category);
+          setAlarmRelativeOffset(selectedTask.alarmRelativeOffset);
       } else {
           setTaskName('');
           setTaskDescription('');
           setTaskPriority(null);
           setTaskCategory(null);
+          setTaskDueDate(initializeDate);
+          setEventStartTime(initializeDate);
+          setEventEndTime(initializeDate);
       }
     }, [selectedTask]);
 
@@ -77,12 +116,17 @@ const TaskForm = () => {
     const resetForm = () => {
       setTaskName('');
       setTaskDescription('');
+      setTaskDueDate(initializeDate);
       setTaskCategory(null);
       setTaskPriority(null);
+      setAlarmRelativeOffset(null);
       setCategoryOpen(false);
       setPriorityOpen(false);
+      setAlarmOpen(false);
       setIsEditing(false);
       setSelectedTask(null);
+      setEventStartTime(initializeDate);
+      setEventEndTime(initializeDate);
       console.log('form resetted');
     };
     const renderBackdrop = useCallback(
@@ -96,29 +140,75 @@ const TaskForm = () => {
       ),
       []
     );
-    const handleAddTask = () => {
-      const nextId = computeNextId(tasks);
-      // Only add the task if it's not empty
-      if (taskName.trim() !== '') {
-        dispatch({
-        type: 'added',
-        id: nextId,
-        name: taskName,
-        description: taskDescription,
-        done: false,
-        priority: taskPriority,
-        category: taskCategory,
-        });
-        resetForm();
-        close();
+
+    const handleAddTask = async () => {
+      if (eventStartTime.getTime() > eventEndTime.getTime()) {
         Toast.show({
-          type: 'success',
+          type: 'error',
           position: 'top',
-          text1: 'Task Added',
+          text1: 'Error',
+          text2: 'Reminder start time should be before the end time.',
           visibilityTime: 3000,
           autoHide: true,
           topOffset: 50,
         });
+        return;
+      }      
+      // Only add the task if it's not empty
+      if (taskName.trim() !== '') {
+        // Fetch the stored calendarId from AsyncStorage.
+        const calendarId = await AsyncStorage.getItem('appCalendarId');
+
+        if (!calendarId) {
+          console.warn('No Calendar ID found');
+          return;
+        }
+        // Check if start time and end time are the same
+        const allDay = eventStartTime.getTime() === 
+          eventEndTime.getTime();
+        const nextId = computeNextId(tasks);
+        // Create Calendar Event and Add task
+        try {
+          const eventId = await Calendar
+          .createEventAsync(calendarId, {
+            title: taskName,
+            startDate: allDay ? taskDueDate : 
+            eventStartTime,
+            endDate: allDay ? new Date(taskDueDate) : 
+            eventEndTime,
+            allDay: allDay,
+            alarms:[{relativeOffset: alarmRelativeOffset}]
+          });
+          console.log('Event created with ID:', eventId);
+          dispatch({
+            type: 'added',
+            id: nextId,
+            name: taskName,
+            description: taskDescription,
+            done: false,
+            dueDate: taskDueDate,
+            priority: taskPriority,
+            category: taskCategory,
+            eventStartTime: eventStartTime,
+            eventEndTime: eventEndTime,
+            alarmRelativeOffset: alarmRelativeOffset,
+            calendarEventId: eventId
+            });
+          } catch (error) {
+            console.warn('Error creating calendar event:', error);
+          }
+          Keyboard.dismiss();
+          // Close Bottom Sheet
+          close();
+          Toast.show({
+            type: 'success',
+            position: 'top',
+            text1: 'Task Added',
+            text2: 'Task Event added to calendar',
+            visibilityTime: 3000,
+            autoHide: true,
+            topOffset: 50,
+          });
       } else {
         Toast.show({
           type: 'error',
@@ -130,25 +220,70 @@ const TaskForm = () => {
         });
     }};
 
-    const handleEditTask = () => {
+    const handleEditTask = async () => {
+      if (eventStartTime.getTime() > eventEndTime.getTime()) {
+        Toast.show({
+          type: 'error',
+          position: 'top',
+          text1: 'Error',
+          text2: 'Reminder start time should be before the end time.',
+          visibilityTime: 3000,
+          autoHide: true,
+          topOffset: 50,
+        });
+        return;
+      } 
       // Only edit task if it's not empty
       if (taskName.trim() !== '') {
+        const allDay = eventStartTime.getTime() === 
+        eventEndTime.getTime();
+        const calendarId = await AsyncStorage
+        .getItem('appCalendarId');
+    
+        if (!calendarId) {
+          console.warn('No Calendar ID found');
+          return;
+        }
+        // Update the calendar event
+        if (selectedTask.calendarEventId) {
+          console.log('hi');
+          try {
+            await Calendar
+            .updateEventAsync(selectedTask.calendarEventId, {
+              title: taskName,
+              startDate: allDay ? taskDueDate : eventStartTime,
+              endDate: allDay ? new Date(taskDueDate) : 
+              eventEndTime,
+              allDay: allDay,
+              alarms:[{relativeOffset: alarmRelativeOffset}]
+            });
+            console.log('Calendar event updated:', 
+            selectedTask.calendarEventId);
+          } catch (error) {
+            console.warn('Error updating calendar event:', error);
+          }
+        }
         dispatch({
           type: 'changed',
           task: {
             ...selectedTask,
             name: taskName,
             description: taskDescription,
+            dueDate: taskDueDate,
             priority: taskPriority,
             category: taskCategory,
+            eventStartTime: eventStartTime,
+            eventEndTime: eventEndTime,
+            alarmRelativeOffset: alarmRelativeOffset,
           }
         });
-        resetForm();
+        Keyboard.dismiss();
         close();
         Toast.show({
           type: 'success',
           position: 'top',
           text1: 'Task Edited',
+          text2: 'Calendar Event Edited',
           visibilityTime: 3000,
           autoHide: true,
           topOffset: 50,
@@ -163,6 +298,42 @@ const TaskForm = () => {
       resetForm();
       close();
       setIsEditing(false);
+    };
+
+    const handleDateChange = (event, selectedDate) => {
+      const currentDate = selectedDate || taskDueDate;
+      currentDate.setSeconds(0);
+      currentDate.setMilliseconds(0);
+
+      // Update the date parts of eventStartTime and eventEndTime
+      eventStartTime.setFullYear(currentDate.getFullYear());
+      eventStartTime.setMonth(currentDate.getMonth());
+      eventStartTime.setDate(currentDate.getDate());
+      eventStartTime.setSeconds(0);
+      eventStartTime.setMilliseconds(0);
+
+      eventEndTime.setFullYear(currentDate.getFullYear());
+      eventEndTime.setMonth(currentDate.getMonth());
+      eventEndTime.setDate(currentDate.getDate());
+      eventEndTime.setSeconds(0);
+      eventEndTime.setMilliseconds(0);
+
+      setShowDatePicker(false);
+      setTaskDueDate(currentDate);
+      setEventStartTime(new Date(eventStartTime));
+      setEventEndTime(new Date(eventEndTime));
+    };
+    const handleReminderTimeChange = (which, 
+      event, selectedTime) => {
+      const currentTime = selectedTime || (which === "start" ? 
+      eventStartTime : eventEndTime);
+      currentTime.setSeconds(0);
+      currentTime.setMilliseconds(0);
+      if (which === "start") {
+          setEventStartTime(currentTime);
+      } else {
+          setEventEndTime(currentTime);
+      }
     };
 
     return (
@@ -224,10 +395,64 @@ const TaskForm = () => {
             styles.inputDescription]}
           keyboardAppearance={theme.dark ? 'dark' : 'light'}
         />
+        
+        {/* Date Picker */}
+        <View style={styles.dateTimeRow}>
+          <View style={styles.datePickerContainer}>
+            <Text style={{color:colors.text}}>Set Due Date</Text>
+                <DateTimePicker
+                  value={taskDueDate}
+                  mode="date"
+                  is24Hour={true}
+                  display="default"
+                  onChange={handleDateChange}
+                  />
+          </View>
+          {/* Start Time Picker */}
+          <View style={styles.datePickerContainer}>
+            <Text style={{color:colors.text}}>
+              Set Event Start Time</Text>
+            {
+              eventStartTime && (
+                <DateTimePicker
+                  value={eventStartTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={(event, date) => 
+                    handleReminderTimeChange("start", event, 
+                    date)}/>
+              )
+            }
+          </View>
+          {/* End Time Picker */}
+          <View style={styles.datePickerContainer}>
+            <Text style={{color:colors.text}}>Set Event End Time</Text>
+            {
+              eventEndTime && (
+                <DateTimePicker
+                  value={eventEndTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={(event, date) => 
+                    handleReminderTimeChange("end", event, date)}
+                />
+              )
+            }
+          </View>
+          
+        </View>
 
-        <View style={styles.dropdownRow}>
+        {/* Solving overlapping problem of drop down pickers between
+        Components (zIndex problem of the library) */}
+        {/*Reference: https://github.com/hossein-zare/react-native-dropdown-picker/issues/596 */}
+        {/*Reference (method used): https://github.com/hossein-zare/react-native-dropdown-picker/issues/596#issuecomment-1643903107 */}
+        <View style={[styles.dropdownRow,{zIndex: 100}]}>
           {/* Category Dropdown Picker */}
           <DropDownPicker
+            zIndex={3000}
+            zIndexInverse={1000}
             open={categoryOpen}
             onOpen={onCategoryOpen}
             value={taskCategory}
@@ -240,6 +465,8 @@ const TaskForm = () => {
           />
           {/* Priority Dropdown picker */}
           <DropDownPicker
+            zIndex={2000}
+            zIndexInverse={2000}
             open={priorityOpen}
             onOpen={onPriorityOpen}
             value={taskPriority}
@@ -251,6 +478,26 @@ const TaskForm = () => {
             theme={theme.dark ? 'DARK' : 'LIGHT'}
           />
         </View>
+        
+        <Text style={{color:colors.text, 
+          marginHorizontal:20,
+          fontWeight: 'bold', fontSize: 16, marginBottom: 5}}>
+          Set Reminder Notification offset time</Text>
+          {/* Alarm Offset Dropdown Picker*/}
+          <DropDownPicker
+            zIndex={0}
+            zIndexInverse={0}
+            open={alarmOpen}
+            onOpen={onAlarmOpen}
+            value={alarmRelativeOffset}
+            items={alarmItems}
+            setOpen={setAlarmOpen}
+            setValue={setAlarmRelativeOffset}
+            placeholder="Reminder Offset"
+            containerStyle={[styles.dropDownContainer,
+              {marginHorizontal: 20, paddingBottom: 20}]}
+            theme={theme.dark ? 'DARK' : 'LIGHT'}
+          />          
       </BottomSheet>
     );
     
@@ -311,6 +558,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 10,
+  },
+  cancelButton: {
+    padding: 8,
+  },
+  dateTimeRow: {
+    margin: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  datePickerContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
   },
 });
 
