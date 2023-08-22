@@ -23,7 +23,14 @@ import { Alert, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { BottomSheetProvider } from './contexts/BottomSheetContext.js';
-
+import * as Notifications from 'expo-notifications';
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 export default function App() {
   // Get (or create if calender !exist yet) the app calendar
   const getAppCalendar = async () => {
@@ -48,6 +55,21 @@ export default function App() {
       return appCalendar.id;
     }
   };
+
+    // Request permission for notification
+    useEffect(() => {
+      const requestPermission = async () => {
+        try {
+          const { status } = await Notifications.requestPermissionsAsync();
+          if (status !== 'granted') {
+            alert('Notification permission is required for notifications to work!');
+          }
+        } catch (error) {
+          console.error('Error requesting notifications permissions', error);
+        }
+      };
+      requestPermission();
+    }, []);
 
   //Reference: (Usage snippet From expo documention) 
   //https://docs.expo.dev/versions/latest/sdk/calendar/

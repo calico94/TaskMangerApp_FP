@@ -140,6 +140,15 @@ function tasksReducer(tasks, action) {
         }
       });
     }
+    case 'saveTime': { // Add time spent to the specific task
+      return tasks.map(t => {
+        if (t.id === action.task.id) {
+          return { ...t, timeSpent: (t.timeSpent || 0) + action.timeSpent };
+        } else {
+          return t;
+        }
+      });
+    }
     case 'deleted': { // Deleted a task
       return tasks.filter(t => t.id !== action.id);
     }
