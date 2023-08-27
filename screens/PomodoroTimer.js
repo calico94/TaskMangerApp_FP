@@ -38,7 +38,7 @@ export default function PomodoroTimer() {
   const timerText = isFocusMode ? 'Focus' : 'Break';
 
   const bottomsheetRef = useRef(null);
-  const snapPoints = useMemo(() => ['25%', '50%'], []);
+  const snapPoints = useMemo(() => ['69%', '50%'], []);
   const dispatch = useContext(TasksDispatchContext);
   const { tasks } = useContext(TasksContext);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -64,6 +64,7 @@ export default function PomodoroTimer() {
         setCurrentSession(1); // Reset to the first session
         setIsFocusMode(true); // Reset to focus mode
         setIsMinutes(true);
+        handleCloseSheet();
       };
     }, [])
   );
@@ -187,8 +188,6 @@ export default function PomodoroTimer() {
       <DropDownPicker
         searchable={true}
         disabled={!isEditable} // Disable when timer is playing
-        zIndex={3000}
-        zIndexInverse={1000}
         open={taskSearchOpen}
         value={selectedTask}
         items={taskItems}
@@ -200,11 +199,12 @@ export default function PomodoroTimer() {
       />
       <TouchableOpacity style={{padding: 20}} 
         onPress={handleExpandSheet}>
-        <FontAwesome name="sliders" size={windowWidth/12} color="black"/>
+        <FontAwesome name="sliders" size={windowWidth/12} 
+        color={colors.text} />
       </TouchableOpacity>
       {/* Count down timer */}
       <CountdownCircleTimer
-        size={300}
+        size={windowHeight*0.33}
         strokeWidth={20}
         trailStrokeWidth={16}
         key={key}
@@ -448,7 +448,8 @@ const styles = StyleSheet.create({
   },
   slider: {
     width: '100%',
-    height: 40,
+    // height: 40,
+    height: windowHeight*0.04,
   },
   valueText: {
     fontSize: 16,

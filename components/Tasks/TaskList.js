@@ -8,7 +8,7 @@ import { Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Calendar from 'expo-calendar';
 
-const windoWidth = Dimensions.get('window').width;
+const windowWidth = Dimensions.get('window').width;
 function TaskList({ tasks }) {
   const dispatch = useContext(TasksDispatchContext)
   const handleDelete = useCallback(async (taskId) => {
@@ -68,6 +68,7 @@ function TaskList({ tasks }) {
 
   return (
     <FlatList
+      style={{zIndex:-1}}
       data={tasks}
       keyExtractor={item => item.id.toString()}
       renderItem={({ item }) => (
@@ -81,17 +82,11 @@ function TaskList({ tasks }) {
 }
 
 const styles = StyleSheet.create({
-  taskWrapper: {
-    margin: 10,
-    padding: 5,
-    backgroundColor: 'lightgray',
-    borderRadius: 5,
-  },
   deleteButton: {
     backgroundColor: '#eb2323',
     borderRadius: 5,
     justifyContent: 'center',
-    width: windoWidth *.15,
+    width: windowWidth *.15,
     text: {
       color: 'white',
       alignSelf: 'center',

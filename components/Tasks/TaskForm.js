@@ -9,7 +9,12 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import CustomBackground from '../StyleComponents/BottomSheetCustomBackground.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Calendar from 'expo-calendar';
+import { Platform } from 'react-native';
+import AndroidDateTimePicker from '../../utils/AndroidDateTimePicker.js';
 import { useBottomSheet } from '../../contexts/BottomSheetContext.js';
+import { useFocusEffect } from '@react-navigation/native';
+import { Dimensions } from 'react-native';
+const windowHeight = Dimensions.get('window').height;
 const TaskForm = () => {
     const {
       ref,
@@ -25,9 +30,10 @@ const TaskForm = () => {
       date.setSeconds(0);
       date.setMilliseconds(0);
       return date;
-  };
+    };
     const { categoriesData, priorityData } = useContext(TasksContext);
     const dispatch = useContext(TasksDispatchContext);
+    const isAndroid = Platform.OS === 'android';
     const [showDatePicker, setShowDatePicker] = useState(false);
     
     const [taskName, setTaskName] = useState('');
@@ -139,6 +145,14 @@ const TaskForm = () => {
         />
       ),
       []
+    );
+    // This will be called when the component goes out of focus
+    useFocusEffect(
+      useCallback(() => {
+        return () => {
+          close();
+        };
+      }, [])
     );
 
     const handleAddTask = async () => {
@@ -338,6 +352,7 @@ const TaskForm = () => {
 
     return (
       <BottomSheet
+        android_keyboardInputMode="adjustResize"
         ref={ref}
         index={-1}
         snapPoints={snapPoints}
@@ -395,11 +410,21 @@ const TaskForm = () => {
             styles.inputDescription]}
           keyboardAppearance={theme.dark ? 'dark' : 'light'}
         />
-        
+
         {/* Date Picker */}
         <View style={styles.dateTimeRow}>
           <View style={styles.datePickerContainer}>
             <Text style={{color:colors.text}}>Set Due Date</Text>
+            {
+              isAndroid ? 
+                // Android Date Picker    
+                <AndroidDateTimePicker 
+                  mode="date" 
+                  currentValue={taskDueDate}
+                  onDateTimePicked={(selectedDate) => 
+                  handleDateChange(null, selectedDate)}
+                /> : 
+                // IOS Date Picker
                 <DateTimePicker
                   value={taskDueDate}
                   mode="date"
@@ -407,12 +432,24 @@ const TaskForm = () => {
                   display="default"
                   onChange={handleDateChange}
                   />
+                }
           </View>
           {/* Start Time Picker */}
           <View style={styles.datePickerContainer}>
             <Text style={{color:colors.text}}>
               Set Event Start Time</Text>
             {
+              isAndroid ? 
+              //Android Time picker
+              <AndroidDateTimePicker 
+              mode="time" 
+              currentValue={eventStartTime}
+              onDateTimePicked={(selectedTime) => 
+              handleReminderTimeChange("start", 
+              null,
+              selectedTime)}
+              /> :
+              //IOS Time picker
               eventStartTime && (
                 <DateTimePicker
                   value={eventStartTime}
@@ -429,6 +466,16 @@ const TaskForm = () => {
           <View style={styles.datePickerContainer}>
             <Text style={{color:colors.text}}>Set Event End Time</Text>
             {
+              isAndroid ? 
+              //Android Time picker
+              <AndroidDateTimePicker 
+              mode="time" 
+              currentValue={eventEndTime}
+              onDateTimePicked={(selectedTime) => 
+              handleReminderTimeChange("end", null, 
+              selectedTime)}
+              /> :
+              //IOS Time picker
               eventEndTime && (
                 <DateTimePicker
                   value={eventEndTime}
@@ -436,12 +483,12 @@ const TaskForm = () => {
                   is24Hour={true}
                   display="default"
                   onChange={(event, date) => 
-                    handleReminderTimeChange("end", event, date)}
+                    handleReminderTimeChange("end", 
+                    event, date)}
                 />
               )
             }
           </View>
-          
         </View>
 
         {/* Solving overlapping problem of drop down pickers between

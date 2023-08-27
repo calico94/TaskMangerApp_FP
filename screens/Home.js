@@ -7,7 +7,12 @@ import { TasksContext } from '../contexts/TasksContext';
 import TaskFilterSearch from '../components/Tasks/TaskFilterSearch';
 import TaskForm from '../components/Tasks/TaskForm';
 import { useBottomSheet } from '../contexts/BottomSheetContext';
-
+import { Platform } from 'react-native';
+import { Dimensions } from 'react-native';
+const windowHeight = Dimensions.get('window').height;
+const windowWidth = Dimensions.get('window').width;
+const isAndroid = Platform.OS === 'android';
+const buttonSize = windowWidth * 0.15;
 const Home = () => {
   const { tasks, showCompleted } = useContext(TasksContext);
   const [displayedTasks, setDisplayedTasks] = useState(tasks);
@@ -30,24 +35,20 @@ const Home = () => {
         <TaskList tasks={displayedTasks}/>
         <TaskForm />
         {/* Add Button */}
-        <View style={styles.addButton.container}>
-          <TouchableOpacity
-            style={
-              styles.addButton.button
+        <TouchableOpacity
+          style={styles.addButton.button}
+          onPress={() => {
+            try {  
+              expand();
+            } catch(error) {
+              console.log('Error occurred on pressing:', error)
             }
-            onPress={()=> {
-              try{  
-                expand();
-              }catch(error){
-                console.log('Error occurred on pressing:', error)
-            }}}
-          >
-            <Text style={styles.addButton.text}>+</Text>
-          </TouchableOpacity>
-        </View>
+          }}
+        >
+        <Text style={styles.addButton.text}>+</Text>
+      </TouchableOpacity>
 
       </View>
-      
     </TouchableWithoutFeedback>
   );
 };
@@ -62,22 +63,19 @@ const styles = StyleSheet.create({
       color: 'white',
       fontSize: 32,
     },
-    container: {
-      flex: 1,
-      justifyContent: 'flex-end',
-      alignItems: 'center',
-      zIndex: -1,
-    },
-    button:{
-      marginBottom: 20,
+    button: {
+      position: 'absolute',
+      bottom: 20,
+      alignSelf: 'center',
       backgroundColor: '#34eb83',
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: buttonSize,
+      height: buttonSize,
+      borderRadius: buttonSize / 2,
       alignItems: 'center',
       justifyContent: 'center',
+      zIndex: -1,
     }, 
-  }, 
+  },
 });
-  
+
 export default Home;

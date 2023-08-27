@@ -180,6 +180,7 @@ const styles = StyleSheet.create({
     eventDateTime: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        // padding: 5,
     },
     dueDateLabel: {
         marginTop: 5,
